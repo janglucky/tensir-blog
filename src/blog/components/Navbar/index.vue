@@ -6,10 +6,10 @@
       </router-link>
       <div class="nav-menu">
         <ul>
-          <li ><a href="#">首页</a></li>
+          <li ><a href="/">首页</a></li>
           <li :class="{'curr-page': path=='/blog'}"><a href="#">首页</a></li>
-          <li><a href="#">首页</a></li>
-          <li><a href="#/login">登录</a></li>
+          <li><a href="/">首页</a></li>
+          <li><a href="/login">登录</a></li>
         </ul>
       </div>
   </div>
