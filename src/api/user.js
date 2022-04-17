@@ -8,10 +8,11 @@ export function login(data) {
   })
 }
 
-export function logout() {
+export function logout(data) {
   return request({
-    url: '/user/logout',
-    method: 'post'
+    url: '/admin/logout',
+    method: 'post',
+    data
   })
 }
 
