@@ -42,9 +42,9 @@ export const constantRoutes = [
     redirect: '/blog',
     component: Blog,
     children: [
-    {
+      {
         path: 'blog',
-        name: "blog",
+        name: 'blog',
         component: () => import('@/views/user/blog/index'),
         meta: { title: 'blog', icon: 'blog' }
       }
@@ -68,16 +68,24 @@ export const constantRoutes = [
     }]
   },
   {
-    path: '/admin',
+    path: '/article',
     component: Layout,
-    children: [
-      {
-        path: 'form',
-        name: 'Form',
-        component: () => import('@/views/admin/form/index'),
-        meta: { title: 'Form', icon: 'form' }
-      }
-    ]
+    redirect: '/article/list',
+    meta: {
+      title: '文章',
+      icon: 'el-icon-document'
+    },
+    children: [{
+      path: 'list',
+      name: '所有文章',
+      component: () => import('@/views/admin/article/list'),
+      meta: { title: '所有文章', icon: 'list' }
+    }, {
+      path: 'new',
+      name: '新建',
+      component: () => import('@/views/admin/article/create'),
+      meta: { title: '新建文章', icon: 'edit' }
+    }]
   },
   {
     path: 'external-link',
