@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function fetchList(data) {
   return request({
-    url: '/table/list',
+    url: '/article/list',
     method: 'POST',
     data
   })
@@ -10,7 +10,7 @@ export function fetchList(data) {
 
 export function uploadArticle(data) {
   return request({
-    url: '/table/list',
+    url: '/article/upload',
     method: 'POST',
     data
   })

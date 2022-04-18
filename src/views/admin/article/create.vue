@@ -1,23 +1,23 @@
 <template>
   <div class="createPost-container">
     <el-form
-      ref="postForm"
-      :model="postForm"
+      ref="postArticleForm"
+      :model="postArticleForm"
       :rules="rules"
       class="form-container"
     >
       <div class="createPost-main-container">
         <el-form-item style="margin-bottom: 40px">
           <el-button v-loading="loading" type="success" @click="submitForm">
-            Publish
+            发布
           </el-button>
           <el-button v-loading="loading" type="warning" @click="draftForm">
-            Draft
+            草稿箱
           </el-button>
         </el-form-item>
         <el-form-item style="margin-bottom: 40px" prop="title">
           <MDinput
-            v-model="postForm.title"
+            v-model="postArticleForm.title"
             :maxlength="100"
             name="name"
             required
@@ -27,11 +27,11 @@
         </el-form-item>
         <el-form-item label="标签">
           <el-select
-            v-model="tags_model"
+            v-model="postTagForm.tags"
             filterable
             allow-create
             multiple
-            style="width:300px"
+            style="width: 300px"
             placeholder="请选择"
           >
             <el-option
@@ -42,28 +42,12 @@
             />
           </el-select>
         </el-form-item>
-
-        <el-form-item
-          style="margin-bottom: 40px"
-          label-width="70px"
-          label="Summary:"
-        >
-          <el-input
-            v-model="postForm.content_short"
-            :rows="1"
-            type="textarea"
-            class="article-textarea"
-            autosize
-            placeholder="Please enter the content"
-          />
-          <span
-            v-show="contentShortLength"
-            class="word-counter"
-          >{{ contentShortLength }}words</span>
-        </el-form-item>
-
         <el-form-item prop="content" style="margin-bottom: 30px">
-          <Tinymce ref="editor" v-model="postForm.content" :height="400" />
+          <Tinymce
+            ref="editor"
+            v-model="postArticleForm.content"
+            :height="400"
+          />
         </el-form-item>
       </div>
     </el-form>
@@ -73,22 +57,19 @@
 <script>
 import Tinymce from '@/components/Tinymce'
 import MDinput from '@/components/MDinput'
+import { mapGetters } from 'vuex'
 
 import { validURL } from '@/utils/validate'
 import { fetchArticle, uploadArticle } from '@/api/article'
 
-const defaultForm = {
-  status: 'draft',
+const defaultArticleForm = {
+  status: 0,
   title: '', // 文章题目
-  content: '', // 文章内容
-  content_short: '', // 文章摘要
-  source_uri: '', // 文章外链
-  image_uri: '', // 文章图片
-  display_time: undefined, // 前台展示时间
-  id: undefined,
-  platforms: ['a-platform'],
-  comment_disabled: false,
-  importance: 0
+  content: '' // 文章内容
+}
+
+const defaultTagForm = {
+  tags: []
 }
 
 export default {
@@ -112,22 +93,9 @@ export default {
         callback()
       }
     }
-    const validateSourceUri = (rule, value, callback) => {
-      if (value) {
-        if (validURL(value)) {
-          callback()
-        } else {
-          this.$message({
-            message: '外链url填写不正确',
-            type: 'error'
-          })
-          callback(new Error('外链url填写不正确'))
-        }
-      } else {
-        callback()
-      }
-    }
     return {
+      email: '',
+      token: '',
       tags_model: [],
       tags: [
         {
@@ -151,32 +119,29 @@ export default {
           label: '北京烤鸭'
         }
       ],
-      postForm: Object.assign({}, defaultForm),
+      postArticleForm: Object.assign({}, defaultArticleForm),
+      postTagForm: Object.assign({}, defaultTagForm),
       loading: false,
       userListOptions: [],
       rules: {
-        image_uri: [{ validator: validateRequire }],
         title: [{ validator: validateRequire }],
-        content: [{ validator: validateRequire }],
-        source_uri: [{ validator: validateSourceUri, trigger: 'blur' }]
+        content: [{ validator: validateRequire }]
       },
       tempRoute: {}
     }
   },
   computed: {
-    contentShortLength() {
-      return this.postForm.content_short.length
-    },
+    ...mapGetters(['token']),
     displayTime: {
       // set and get is useful when the data
       // returned by the back end api is different from the front end
       // back end return => "2013-06-25 06:59:25"
       // front end need timestamp => 1372114765000
       get() {
-        return +new Date(this.postForm.display_time)
+        return +new Date(this.postArticleForm.display_time)
       },
       set(val) {
-        this.postForm.display_time = new Date(val)
+        this.postArticleForm.display_time = new Date(val)
       }
     }
   },
@@ -195,11 +160,10 @@ export default {
     fetchData(id) {
       fetchArticle(id)
         .then((response) => {
-          this.postForm = response.data
+          this.postArticleForm = response.data
 
           // just for test
-          this.postForm.title += `   Article Id:${this.postForm.id}`
-          this.postForm.content_short += `   Article Id:${this.postForm.id}`
+          this.postArticleForm.title += `   Article Id:${this.postArticleForm.id}`
 
           // set tagsview title
           this.setTagsViewTitle()
@@ -214,27 +178,29 @@ export default {
     setTagsViewTitle() {
       const title = 'Edit Article'
       const route = Object.assign({}, this.tempRoute, {
-        title: `${title}-${this.postForm.id}`
+        title: `${title}-${this.postArticleForm.id}`
       })
       this.$store.dispatch('tagsView/updateVisitedView', route)
     },
     setPageTitle() {
       const title = 'Edit Article'
-      document.title = `${title} - ${this.postForm.id}`
+      document.title = `${title} - ${this.postArticleForm.id}`
     },
     submitForm() {
-      console.log(this.postForm)
-      this.$refs.postForm.validate((valid) => {
+      console.log(this.postArticleForm)
+      this.$refs.postArticleForm.validate((valid) => {
         if (valid) {
           this.loading = true
-          uploadArticle(this.postForm).then((response) => {})
+          uploadArticle({ article: this.postArticleForm, token: this.token }).then(
+            (response) => {}
+          )
           this.$notify({
             title: '成功',
             message: '发布文章成功',
             type: 'success',
             duration: 2000
           })
-          this.postForm.status = 'published'
+          this.postArticleForm.status = 1
           this.loading = false
         } else {
           console.log('error submit!!')
@@ -244,8 +210,8 @@ export default {
     },
     draftForm() {
       if (
-        this.postForm.content.length === 0 ||
-        this.postForm.title.length === 0
+        this.postArticleForm.content.length === 0 ||
+        this.postArticleForm.title.length === 0
       ) {
         this.$message({
           message: '请填写必要的标题和内容',
@@ -259,7 +225,7 @@ export default {
         showClose: true,
         duration: 1000
       })
-      this.postForm.status = 'draft'
+      this.postArticleForm.status = 0
     }
   }
 }
