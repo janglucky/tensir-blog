@@ -32,17 +32,22 @@
             filterable
             remote
             reserve-keyword
+            collapse-tags
+            allow-create
             placeholder="请输入关键词"
             :remote-method="showTagNotice"
-            :loading="loading">
+            :loading="loading"
+          >
             <el-option
               v-for="item in tags"
               :key="item.value"
               :label="item.label"
-              :value="item.value">
+              :value="item.value"
+            >
             </el-option>
           </el-select>
         </el-form-item>
+        {{ postTagForm.tags }}
         <el-form-item prop="content" style="margin-bottom: 30px">
           <Tinymce
             ref="editor"
@@ -56,58 +61,58 @@
 </template>
 
 <script>
-import Tinymce from '@/components/Tinymce'
-import MDinput from '@/components/MDinput'
-import { fetchArticle, uploadArticle, searchTagByKeyword } from '@/api/article'
-import { getToken } from '@/utils/auth'
+import Tinymce from "@/components/Tinymce";
+import MDinput from "@/components/MDinput";
+import { fetchArticle, uploadArticle, searchTagByKeyword } from "@/api/article";
+import { getToken } from "@/utils/auth";
 
 const defaultArticleForm = {
   status: 0,
-  title: '', // 文章题目
-  content: '' // 文章内容
-}
+  title: "", // 文章题目
+  content: "", // 文章内容
+};
 
 const defaultTagForm = {
-  tags: []
-}
+  tags: [],
+};
 
 export default {
-  name: 'ArticleDetail',
+  name: "ArticleDetail",
   components: { Tinymce, MDinput },
   props: {
     isEdit: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   data() {
     const validateRequire = (rule, value, callback) => {
-      if (value === '') {
+      if (value === "") {
         this.$message({
-          message: rule.field + '为必传项',
-          type: 'error'
-        })
-        callback(new Error(rule.field + '为必传项'))
+          message: rule.field + "为必传项",
+          type: "error",
+        });
+        callback(new Error(rule.field + "为必传项"));
       } else {
-        callback()
+        callback();
       }
-    }
+    };
     return {
-      email: '',
+      email: "",
       token: getToken(),
       tags_model: [],
-      tags: [
-      ],
+      tags: [],
+      tagMap: [],
       postArticleForm: Object.assign({}, defaultArticleForm),
       postTagForm: Object.assign({}, defaultTagForm),
       loading: false,
       userListOptions: [],
       rules: {
         title: [{ validator: validateRequire }],
-        content: [{ validator: validateRequire }]
+        content: [{ validator: validateRequire }],
       },
-      tempRoute: {}
-    }
+      tempRoute: {},
+    };
   },
   computed: {
     displayTime: {
@@ -116,92 +121,115 @@ export default {
       // back end return => "2013-06-25 06:59:25"
       // front end need timestamp => 1372114765000
       get() {
-        return +new Date(this.postArticleForm.display_time)
+        return +new Date(this.postArticleForm.display_time);
       },
       set(val) {
-        this.postArticleForm.display_time = new Date(val)
-      }
-    }
+        this.postArticleForm.display_time = new Date(val);
+      },
+    },
   },
   created() {
     if (this.isEdit) {
-      const id = this.$route.params && this.$route.params.id
-      this.fetchData(id)
+      const id = this.$route.params && this.$route.params.id;
+      this.fetchData(id);
     }
 
     // Why need to make a copy of this.$route here?
     // Because if you enter this page and quickly switch tag, may be in the execution of the setTagsViewTitle function, this.$route is no longer pointing to the current page
     // https://github.com/PanJiaChen/vue-element-admin/issues/1221
-    this.tempRoute = Object.assign({}, this.$route)
+    this.tempRoute = Object.assign({}, this.$route);
   },
   methods: {
     fetchData(id) {
       fetchArticle(id)
         .then((response) => {
-          this.postArticleForm = response.data
+          this.postArticleForm = response.data;
 
           // just for test
-          this.postArticleForm.title += `   Article Id:${this.postArticleForm.id}`
+          this.postArticleForm.title += `   Article Id:${this.postArticleForm.id}`;
 
           // set tagsview title
-          this.setTagsViewTitle()
+          this.setTagsViewTitle();
 
           // set page title
-          this.setPageTitle()
+          this.setPageTitle();
         })
         .catch((err) => {
-          console.log(err)
-        })
+          console.log(err);
+        });
     },
     showTagNotice(query) {
-      query = query.trim()
-      if(query == '') {
-        return
+      query = query.trim();
+      if (query == "") {
+        return;
       }
-      searchTagByKeyword({token: this.token, params: {keyword: query}}).then(response => {
-        var tagSugs = response.data
-        this.tags = []
+      searchTagByKeyword({
+        token: this.token,
+        params: { keyword: query },
+      }).then((response) => {
+        var tagSugs = response.data;
+        this.tags = [];
+        this.tagMap = {};
         for (let i = 0; i < tagSugs.length; i++) {
-            this.tags.push({
-              value: tagSugs[i].id,
-              label: tagSugs[i].name
-            })
+          this.tags.push({
+            value: tagSugs[i].id,
+            label: tagSugs[i].name,
+          });
+          this.tagMap[tagSugs[i].id] = tagSugs[i].name;
         }
-        
-      })
+      });
     },
     setTagsViewTitle() {
-      const title = 'Edit Article'
+      const title = "Edit Article";
       const route = Object.assign({}, this.tempRoute, {
-        title: `${title}-${this.postArticleForm.id}`
-      })
-      this.$store.dispatch('tagsView/updateVisitedView', route)
+        title: `${title}-${this.postArticleForm.id}`,
+      });
+      this.$store.dispatch("tagsView/updateVisitedView", route);
     },
     setPageTitle() {
-      const title = 'Edit Article'
-      document.title = `${title} - ${this.postArticleForm.id}`
+      const title = "Edit Article";
+      document.title = `${title} - ${this.postArticleForm.id}`;
     },
     submitForm() {
-      console.log(this.postArticleForm)
+      console.log(this.postArticleForm);
+      console.log(this.tagMap);
+
       this.$refs.postArticleForm.validate((valid) => {
         if (valid) {
-          this.loading = true
-          uploadArticle({ article: this.postArticleForm, token: this.token }).then(
-            (response) => {}
-          )
+          var articleTags = this.postTagForm.tags;
+          var postTags = [];
+          for (var i = 0; i < articleTags.length; i++) {
+            if (this.tagMap[articleTags[i]] == undefined) {
+              postTags.push({
+                id: -1,
+                name: articleTags[i],
+              });
+            } else {
+              postTags.push({
+                id: articleTags[i],
+                name: this.tagMap[articleTags[i]],
+              });
+            }
+          }
+          this.loading = true;
+          uploadArticle({
+            article: this.postArticleForm,
+            token: this.token,
+            tags: postTags,
+          }).then((response) => {});
           this.$notify({
-            title: '成功',
-            message: '发布文章成功',
-            type: 'success',
-            duration: 2000
-          })
-          this.postArticleForm.status = 1
-          this.loading = false
+            title: "成功",
+            message: "发布文章成功",
+            type: "success",
+            duration: 2000,
+          });
+          this.postArticleForm.status = 1;
+          this.loading = false;
         } else {
-          console.log('error submit!!')
-          return false
+          console.log("error submit!!");
+          return false;
         }
-      })
+      });
     },
     draftForm() {
       if (
@@ -209,21 +237,21 @@ export default {
         this.postArticleForm.title.length === 0
       ) {
         this.$message({
-          message: '请填写必要的标题和内容',
-          type: 'warning'
-        })
-        return
+          message: "请填写必要的标题和内容",
+          type: "warning",
+        });
+        return;
       }
       this.$message({
-        message: '保存成功',
-        type: 'success',
+        message: "保存成功",
+        type: "success",
         showClose: true,
-        duration: 1000
-      })
-      this.postArticleForm.status = 0
-    }
-  }
-}
+        duration: 1000,
+      });
+      this.postArticleForm.status = 0;
+    },
+  },
+};
 </script>
 
 <style lang="scss" scoped>
