@@ -15,3 +15,11 @@ export function uploadArticle(data) {
     data
   })
 }
+
+export function searchTagByKeyword(data) {
+  return request({
+    url: '/article/searchTagByKeyword',
+    method: 'POST',
+    data
+  })
+}

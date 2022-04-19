@@ -28,18 +28,19 @@
         <el-form-item label="标签">
           <el-select
             v-model="postTagForm.tags"
-            filterable
-            allow-create
             multiple
-            style="width: 300px"
-            placeholder="请选择"
-          >
+            filterable
+            remote
+            reserve-keyword
+            placeholder="请输入关键词"
+            :remote-method="showTagNotice"
+            :loading="loading">
             <el-option
               v-for="item in tags"
               :key="item.value"
               :label="item.label"
-              :value="item.value"
-            />
+              :value="item.value">
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item prop="content" style="margin-bottom: 30px">
@@ -57,10 +58,8 @@
 <script>
 import Tinymce from '@/components/Tinymce'
 import MDinput from '@/components/MDinput'
-import { mapGetters } from 'vuex'
-
-import { validURL } from '@/utils/validate'
-import { fetchArticle, uploadArticle } from '@/api/article'
+import { fetchArticle, uploadArticle, searchTagByKeyword } from '@/api/article'
+import { getToken } from '@/utils/auth'
 
 const defaultArticleForm = {
   status: 0,
@@ -95,29 +94,9 @@ export default {
     }
     return {
       email: '',
-      token: '',
+      token: getToken(),
       tags_model: [],
       tags: [
-        {
-          value: '选项1',
-          label: '黄金糕'
-        },
-        {
-          value: '选项2',
-          label: '双皮奶'
-        },
-        {
-          value: '选项3',
-          label: '蚵仔煎'
-        },
-        {
-          value: '选项4',
-          label: '龙须面'
-        },
-        {
-          value: '选项5',
-          label: '北京烤鸭'
-        }
       ],
       postArticleForm: Object.assign({}, defaultArticleForm),
       postTagForm: Object.assign({}, defaultTagForm),
@@ -131,7 +110,6 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['token']),
     displayTime: {
       // set and get is useful when the data
       // returned by the back end api is different from the front end
@@ -174,6 +152,23 @@ export default {
         .catch((err) => {
           console.log(err)
         })
+    },
+    showTagNotice(query) {
+      query = query.trim()
+      if(query == '') {
+        return
+      }
+      searchTagByKeyword({token: this.token, params: {keyword: query}}).then(response => {
+        var tagSugs = response.data
+        this.tags = []
+        for (let i = 0; i < tagSugs.length; i++) {
+            this.tags.push({
+              value: tagSugs[i].id,
+              label: tagSugs[i].name
+            })
+        }
+        
+      })
     },
     setTagsViewTitle() {
       const title = 'Edit Article'
