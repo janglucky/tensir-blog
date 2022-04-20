@@ -32,7 +32,6 @@
             filterable
             remote
             reserve-keyword
-            collapse-tags
             allow-create
             placeholder="请输入关键词"
             :remote-method="showTagNotice"
@@ -47,7 +46,6 @@
             </el-option>
           </el-select>
         </el-form-item>
-        {{ postTagForm.tags }}
         <el-form-item prop="content" style="margin-bottom: 30px">
           <Tinymce
             ref="editor"
